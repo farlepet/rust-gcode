@@ -1,0 +1,8 @@
+[package]
+name = "rust-gcode"
+description = "Crate to simplify generation of G-code sequences"
+version = "0.1.0"
+license = "MIT"
+edition = "2021"
+
+[dependencies]
