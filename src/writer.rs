@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::{GCodeError, GCodePosition};
+use crate::{GCodeError, GCodeOptions, GCodePosition};
 
 pub struct GCodeWriter<'a> {
     writer: Box<dyn Write + 'a>,
@@ -13,7 +13,12 @@ impl<'a> GCodeWriter<'a> {
         })
     }
 
-    pub fn move_to(&mut self, pos: GCodePosition, fast: bool) -> Result<(), GCodeError> {
+    pub fn move_to(
+        &mut self,
+        pos: GCodePosition,
+        options: Option<GCodeOptions>,
+        fast: bool,
+    ) -> Result<(), GCodeError> {
         let code = if fast { "G00" } else { "G01" };
         let (x, y, z) = pos.as_f64();
         write!(self.writer, "{}", code)?;
@@ -25,6 +30,12 @@ impl<'a> GCodeWriter<'a> {
         }
         if let Some(val) = z {
             write!(self.writer, " Z{:.4}", val)?;
+        }
+
+        if let Some(options) = options {
+            if let Some(feed_rate) = options.feed_rate {
+                write!(self.writer, " F{:.2}", feed_rate)?;
+            }
         }
 
         Ok(())
@@ -52,12 +63,16 @@ mod tests {
 
     #[test]
     fn move_to() -> Result<(), GCodeError> {
-        fn test(pos: GCodePosition, res: &str) -> Result<(), GCodeError> {
+        fn test(
+            pos: GCodePosition,
+            options: Option<GCodeOptions>,
+            res: &str,
+        ) -> Result<(), GCodeError> {
             let mut data = vec![];
             let bw = BufWriter::new(&mut data);
             let mut gcw = GCodeWriter::new(bw)?;
 
-            gcw.move_to(pos, false)?;
+            gcw.move_to(pos, options, false)?;
             gcw.writer();
 
             assert_eq!(String::from_utf8_lossy(&data), res);
@@ -66,14 +81,19 @@ mod tests {
 
         test(
             GCodePosition::from_f64_full(1.0, 2.0, 3.0)?,
+            None,
             "G01 X1.0000 Y2.0000 Z3.0000",
         )?;
         test(
             GCodePosition::from_f64_full(1.1, 2.2, 3.3)?,
-            "G01 X1.1000 Y2.2000 Z3.3000",
+            Some(GCodeOptions {
+                feed_rate: Some(1200.0),
+            }),
+            "G01 X1.1000 Y2.2000 Z3.3000 F1200.00",
         )?;
         test(
             GCodePosition::from_f64(Some(1.0), None, Some(3.0))?,
+            None,
             "G01 X1.0000 Z3.0000",
         )?;
 

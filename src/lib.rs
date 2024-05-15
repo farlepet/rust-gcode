@@ -1,7 +1,10 @@
-pub mod position;
-pub mod writer;
+mod options;
+mod position;
+mod writer;
 
+pub use crate::options::GCodeOptions;
 pub use crate::position::{GCodeOffset, GCodePosition};
+pub use crate::writer::GCodeWriter;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GCodeError {
