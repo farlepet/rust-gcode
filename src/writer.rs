@@ -3,13 +3,13 @@ use std::io::Write;
 use crate::{GCodeError, GCodePosition};
 
 pub struct GCodeWriter<'a> {
-    writer: Box<dyn Write + 'a>
+    writer: Box<dyn Write + 'a>,
 }
 
 impl<'a> GCodeWriter<'a> {
     pub fn new(writer: impl Write + 'a) -> Result<Self, GCodeError> {
         Ok(Self {
-            writer: Box::new(writer)
+            writer: Box::new(writer),
         })
     }
 
@@ -31,7 +31,7 @@ impl<'a> GCodeWriter<'a> {
     }
 
     pub fn flush(&mut self) -> Result<(), GCodeError> {
-        if let Err(_) = self.writer.flush() {
+        if self.writer.flush().is_err() {
             Err(GCodeError::IOError)
         } else {
             Ok(())
@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn move_to() -> Result<(), GCodeError> {
         fn test(pos: GCodePosition, res: &str) -> Result<(), GCodeError> {
-            let mut data = vec!();
+            let mut data = vec![];
             let bw = BufWriter::new(&mut data);
             let mut gcw = GCodeWriter::new(bw)?;
 
@@ -64,9 +64,18 @@ mod tests {
             Ok(())
         }
 
-        test(GCodePosition::from_f64_full(1.0, 2.0, 3.0)?, "G01 X1.0000 Y2.0000 Z3.0000")?;
-        test(GCodePosition::from_f64_full(1.1, 2.2, 3.3)?, "G01 X1.1000 Y2.2000 Z3.3000")?;
-        test(GCodePosition::from_f64(Some(1.0), None, Some(3.0))?, "G01 X1.0000 Z3.0000")?;
+        test(
+            GCodePosition::from_f64_full(1.0, 2.0, 3.0)?,
+            "G01 X1.0000 Y2.0000 Z3.0000",
+        )?;
+        test(
+            GCodePosition::from_f64_full(1.1, 2.2, 3.3)?,
+            "G01 X1.1000 Y2.2000 Z3.3000",
+        )?;
+        test(
+            GCodePosition::from_f64(Some(1.0), None, Some(3.0))?,
+            "G01 X1.0000 Z3.0000",
+        )?;
 
         Ok(())
     }
